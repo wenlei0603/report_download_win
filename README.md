@@ -26,7 +26,7 @@ What it does:
   - `--user-data-dir="D:\chrome-rpa-profile"`
   - the LSEG Research Next URL from the project notes.
 - Connects to the existing Chrome session.
-- Reads tasks from `D:\20-temp\0422\lseg_request_by_call_2015_2018.txt`.
+- Reads tasks from `D:\20-temp\0422\lseg_request_by_call_2015_2018_end_plus_7d.txt`.
 - Skips tasks that already have a final status in `logs/manual_task_status.jsonl`.
 - Waits for your manual trigger before each task.
 
@@ -36,6 +36,9 @@ Per-task interaction:
 Trigger > Enter   fills company/date and runs search
 Trigger > s       skips this task for now
 Trigger > q       exits
+
+Prompt window      shows `cc_date .. cc_date+7d` for operator reference
+Search window      still uses dataset `window_start .. window_end`
 
 Status > 1        downloaded
 Status > 2        no_report

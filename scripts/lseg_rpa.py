@@ -73,7 +73,7 @@ def focus_target(target) -> None:
 
 DEFAULT_CONFIG = {
     "workspace_url": "https://workspace.refinitiv.com/web/Apps/research-next/?st=OAPermID#/?st=OAPermID",
-    "input_file": r"D:\\20-temp\\0422\\lseg_request_by_call_2015_2018.txt",
+    "input_file": r"D:\\20-temp\\0422\\lseg_request_by_call_2015_2018_end_plus_7d.txt",
     "download_dir": "output/downloads",
     "mapping_csv": "output/task_file_mapping.csv",
     "run_log_jsonl": "logs/run_log.jsonl",
@@ -224,6 +224,7 @@ class RequestTask:
     task_id: str
     company: str
     ticker: str
+    cc_date: date
     date_from: date
     date_to: date
     raw_line: str
@@ -363,17 +364,19 @@ def parse_tasks(lines: Iterable[str]) -> list[RequestTask]:
             company = parts[1]
             ticker = parts[2] if len(parts) >= 3 else ""
             try:
+                cc_date = parse_date(parts[3])
                 d1 = parse_date(parts[4])
                 d2 = parse_date(parts[5])
             except ValueError:
-                d1 = d2 = None
-            if d1 is not None and d2 is not None:
+                cc_date = d1 = d2 = None
+            if cc_date is not None and d1 is not None and d2 is not None:
                 date_from, date_to = (d1, d2) if d1 <= d2 else (d2, d1)
                 tasks.append(
                     RequestTask(
                         task_id=f"T{idx:04d}",
                         company=company or f"UNKNOWN_{idx}",
                         ticker=ticker,
+                        cc_date=cc_date,
                         date_from=date_from,
                         date_to=date_to,
                         raw_line=raw,
@@ -404,6 +407,7 @@ def parse_tasks(lines: Iterable[str]) -> list[RequestTask]:
                 task_id=f"T{idx:04d}",
                 company=company_part,
                 ticker="",
+                cc_date=date_from,
                 date_from=date_from,
                 date_to=date_to,
                 raw_line=raw,

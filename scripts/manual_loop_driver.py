@@ -18,7 +18,7 @@ import shutil
 import sqlite3
 import sys
 import tempfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -320,9 +320,20 @@ def prompt_int(prompt: str, default: int = 0) -> int:
         return value
 
 
+def prompt_window_text(task: core.RequestTask) -> str:
+    prompt_start = task.cc_date
+    prompt_end = task.cc_date + timedelta(days=7)
+    return f"{prompt_start.isoformat()}..{prompt_end.isoformat()}"
+
+
+def search_window_text(task: core.RequestTask) -> str:
+    return f"{task.date_from.isoformat()}..{task.date_to.isoformat()}"
+
+
 def prompt_status(task: core.RequestTask, default_pages: int = 0) -> tuple[str, int, str] | None:
     print("")
-    print(f"[TASK] {task.task_id} | {task.company} | {task.date_from}..{task.date_to}")
+    print(f"[TASK] {task.task_id} | {task.company} | prompt {prompt_window_text(task)}")
+    print(f"Search window: {search_window_text(task)}")
     print("Status: 1=downloaded  2=no_report  3=failed  4=skip  q=quit")
     while True:
         raw = input("Status > ").strip()
@@ -339,7 +350,8 @@ def prompt_status(task: core.RequestTask, default_pages: int = 0) -> tuple[str, 
 
 def prompt_fill_trigger(task: core.RequestTask, used_pages: int, limit: int) -> str:
     print("")
-    print(f"[NEXT] {task.task_id} | {task.company} | {task.date_from}..{task.date_to}")
+    print(f"[NEXT] {task.task_id} | {task.company} | prompt {prompt_window_text(task)}")
+    print(f"Search window: {search_window_text(task)}")
     print(f"Today pages: {used_pages}/{limit}")
     if used_pages >= limit:
         print(f"[WARN] Today page count has reached or exceeded {limit}.")
