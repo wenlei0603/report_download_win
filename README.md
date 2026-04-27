@@ -1,164 +1,121 @@
-# LSEG Research Next Manual Download Assistant
+# LSEG Research Next Downloader (Windows)
 
-This workspace supports a human-in-the-loop workflow for downloading LSEG Research Next reports. The script controls only the repetitive query setup:
+This repository is the Windows edition of the LSEG Research Next manual download assistant.
 
-- company selection
-- custom date range
-- search trigger
-- progress logging
-- daily page-count warning
+It is designed for a human-in-the-loop workflow:
 
-You still manually review the results, download documents, and enter the task status/page count.
+- the script fills company and date filters
+- the script triggers search
+- you manually inspect results and download reports
+- you record status and page counts in the terminal
 
-## Main Workflow
+The repository already includes the task dataset used by the workflow:
 
-Use this for normal multi-day work:
+- `data/tasks/lseg_request_by_call_2015_2018_end_plus_7d.txt`
+
+## Quick Start
+
+1. Clone the repository.
+2. Open a terminal in the repository root.
+3. Run:
+
+```powershell
+.\setup_windows.bat
+```
+
+4. After setup completes, run:
 
 ```powershell
 .\start_manual_loop.bat
 ```
 
-What it does:
+## What Setup Does
 
-- Checks whether Chrome CDP is already available at `http://127.0.0.1:9222/json/version`.
-- If not available, starts Chrome with:
-  - `--remote-debugging-port=9222`
-  - `--user-data-dir="D:\chrome-rpa-profile"`
-  - the LSEG Research Next URL from the project notes.
-- Connects to the existing Chrome session.
-- Reads tasks from `D:\20-temp\0422\lseg_request_by_call_2015_2018_end_plus_7d.txt`.
-- Skips tasks that already have a final status in `logs/manual_task_status.jsonl`.
-- Waits for your manual trigger before each task.
+`setup_windows.bat` will:
 
-Per-task interaction:
+- create `.venv`
+- install Python dependencies from `requirements.txt`
+- create `logs/`
+- create `output/`
+- create `.browser-profile/`
 
-```text
-Trigger > Enter   fills company/date and runs search
-Trigger > s       skips this task for now
-Trigger > q       exits
+## Default Files
 
-Prompt window      shows `cc_date .. cc_date+7d` for operator reference
-Search window      still uses dataset `window_start .. window_end`
+- Main config: `config/config.yaml`
+- Input dataset: `data/tasks/lseg_request_by_call_2015_2018_end_plus_7d.txt`
+- Stable status log: `logs/manual_task_status.jsonl`
+- Stable progress CSV: `output/manual_task_progress.csv`
+- Stable task mapping CSV: `output/task_file_mapping.csv`
+- Stable run log: `logs/run_log.jsonl`
 
-Status > 1        downloaded
-Status > 2        no_report
-Status > 3        failed
-Status > 4        skip
-Status > 5        special_company_case (e.g. privatized/delisted)
-Status > q        exits
+## Daily Workflow
 
-Downloaded pages > enter the page count you downloaded manually
-Note > optional note
+Use this for normal work:
+
+```powershell
+.\start_manual_loop.bat
 ```
 
-## Daily Page Limit
+The launcher will:
 
-The manual loop tracks pages by calendar date using the page counts you enter.
+- detect Microsoft Edge or Google Chrome
+- start the browser with CDP on port `9222` if needed
+- reuse the repo-local browser profile in `.browser-profile/`
+- launch the manual loop driver
 
-- Default daily warning threshold: `650` pages.
-- The script prints the current daily total at startup and before each task.
-- When the daily total reaches or exceeds `650`, it prints a `[WARN]` message and records the total in the logs.
+## Per-Task Interaction
 
-The daily page count is calculated from:
+The terminal shows a reference prompt window and the actual search window:
 
-```text
-logs/manual_task_status.jsonl
-```
+- Prompt window: `cc_date .. cc_date + 7d`
+- Search window: dataset `window_start .. window_end`
 
-Each status record includes:
+Available status codes:
 
-- `run_date`
-- `task_id`
-- `company`
-- `date_from`
-- `date_to`
-- `status`
-- `pages`
-- `daily_total_pages`
-- `day_page_limit`
-- `note`
-- `page_url`
+- `1`: `downloaded`
+- `2`: `no_report`
+- `3`: `failed`
+- `4`: `skip`
+- `5`: `special_company_case`
 
-## Stable Output Files
+Examples of `special_company_case`:
 
-Normal daily runs reuse these files:
+- privatized
+- delisted
+- no longer covered because of a structural company change
 
-- Status log: `logs/manual_task_status.jsonl`
-- Progress CSV: `output/manual_task_progress.csv`
-- Task mapping CSV: `output/task_file_mapping.csv`
-- Run log: `logs/run_log.jsonl`
+## Initial LSEG UI Setup
 
-These files are intentionally stable so the work can continue across multiple days.
+Before processing tasks, prepare the LSEG page manually:
 
-## Reinitializing All Tasks
+- Contributor: `Morgan Stanley` only
+- Country/Region: `USA`
+- Industry: none
+- Do not enable preferred contributors
 
-Use this only when you want to restart the entire process from the first task:
+The script assumes those global filters remain fixed.
+
+## Resetting Progress
+
+To archive stable logs and restart from the first task:
 
 ```powershell
 .\init_manual_loop_state.bat
 ```
 
-It requires typing:
+You will be asked to type `RESET`.
 
-```text
-RESET
-```
+## Isolated Timestamped Runs
 
-Then it archives the current stable files and creates clean replacements.
-
-Archived files go to:
-
-- `logs/archive/`
-- `output/archive/`
-
-## Optional New-Run Button
-
-This button creates timestamped output files for an isolated run:
+To create a separate set of output files for a one-off batch:
 
 ```powershell
 .\start_manual_loop_new_run.bat
 ```
 
-This is not the default daily workflow. Use it only when you want a separate one-off batch with timestamped logs.
-
-## Configuration
-
-Main config:
-
-```text
-config/config.yaml
-```
-
-Important fields:
-
-- `workspace_url`: LSEG Research Next URL.
-- `input_file`: task input file.
-- `cdp_endpoint`: Chrome CDP endpoint, normally `http://127.0.0.1:9222`.
-- `selectors`: UI selectors used by the automation.
-
-The manual loop forces these runtime behavior settings:
-
-- `manual_setup_mode = true`
-- `skip_initial_goto = true`
-- `apply_global_filters_once = true`
-
-This means you should manually set global filters in the UI before running tasks:
-
-- Contributor: Morgan Stanley only
-- Country/Region: USA
-- Industry: none
-- Do not enable preferred contributors
-
-## Scripts
-
-- `scripts/manual_loop_driver.py`: main human-in-the-loop driver.
-- `scripts/init_manual_loop_state.py`: archives and resets stable progress files.
-- `scripts/lseg_rpa.py`: underlying automation helpers and legacy full automation path.
-- `scripts/action_recorder.py`: optional UI recorder for discovering selectors/components.
-
 ## Advanced Commands
 
-Run the manual loop directly:
+Run the loop directly:
 
 ```powershell
 $env:PYTHONPATH = (Resolve-Path .deps).Path
@@ -172,14 +129,7 @@ $env:PYTHONPATH = (Resolve-Path .deps).Path
 .\.venv\Scripts\python.exe scripts\manual_loop_driver.py --config config\config.yaml --start-from-task T0100 --day-page-limit 650
 ```
 
-Change the daily warning threshold:
-
-```powershell
-$env:PYTHONPATH = (Resolve-Path .deps).Path
-.\.venv\Scripts\python.exe scripts\manual_loop_driver.py --config config\config.yaml --day-page-limit 600
-```
-
-Legacy dry run for task parsing:
+Dry-run task parsing:
 
 ```powershell
 $env:PYTHONPATH = (Resolve-Path .deps).Path
@@ -188,7 +138,7 @@ $env:PYTHONPATH = (Resolve-Path .deps).Path
 
 ## Notes
 
-- Chrome uses the persistent profile `D:\chrome-rpa-profile`, so login/session state can survive restarts.
-- If the LSEG session expires, log in again in the Chrome window, then continue from the terminal prompt.
-- The script only knows page counts that you manually enter after each task.
-- `skipped` tasks are not final; they will appear again in later runs unless they are later recorded as `downloaded`, `no_report`, or `task_failed`.
+- This repository does not commit `.venv` or browser binaries.
+- If the LSEG session expires, log in again in the browser and continue from the terminal.
+- `skipped` is not a final status. Skipped tasks appear again in later runs.
+- `special_company_case`, `downloaded`, `no_report`, and `task_failed` are treated as final statuses.

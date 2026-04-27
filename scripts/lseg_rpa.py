@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import sys
 import time
@@ -217,6 +218,14 @@ DEFAULT_CONFIG = {
         "download_ms": 60000,
     },
 }
+
+
+def resolve_config_path(value: str, *, base_dir: Path | None = None) -> Path:
+    expanded = os.path.expandvars(os.path.expanduser(value))
+    path = Path(expanded)
+    if not path.is_absolute() and base_dir is not None:
+        path = base_dir / path
+    return path.resolve()
 
 
 @dataclass
@@ -1554,7 +1563,21 @@ def load_config(path: Path) -> dict:
         return DEFAULT_CONFIG
     with path.open("r", encoding="utf-8") as f:
         user_cfg = yaml.safe_load(f) or {}
-    return deep_merge(DEFAULT_CONFIG, user_cfg)
+    config = deep_merge(DEFAULT_CONFIG, user_cfg)
+    resolved_path = path.resolve()
+    base_dir = resolved_path.parent.parent if resolved_path.parent.name.lower() == "config" else resolved_path.parent
+
+    for key in ("input_file", "download_dir", "mapping_csv", "run_log_jsonl"):
+        raw = str(config.get(key, "") or "").strip()
+        if raw:
+            config[key] = str(resolve_config_path(raw, base_dir=base_dir))
+
+    browser_cfg = config.setdefault("browser", {})
+    user_data_dir = str(browser_cfg.get("user_data_dir", "") or "").strip()
+    if user_data_dir:
+        browser_cfg["user_data_dir"] = str(resolve_config_path(user_data_dir, base_dir=base_dir))
+
+    return config
 
 
 def get_research_scope(page: Page):

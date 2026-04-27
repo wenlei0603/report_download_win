@@ -3,20 +3,22 @@ setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "PYTHONPATH=%CD%\.deps"
-set "BROWSER_EXE=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-set "BROWSER_PROFILE=D:\edge-rpa-profile"
+set "BROWSER_EXE="
+set "BROWSER_PROFILE=%CD%\.browser-profile"
 set "CDP_URL=http://127.0.0.1:9222/json/version"
 set "WORKSPACE_URL=https://workspace.refinitiv.com/web/Apps/research-next/?st=OAPermID#/?st=OAPermID"
 set "CURL_EXE=%SystemRoot%\System32\curl.exe"
 
 if not exist ".\.venv\Scripts\python.exe" (
   echo [ERROR] Python venv not found: .\.venv\Scripts\python.exe
+  echo [INFO] Run setup_windows.bat first.
   pause
   exit /b 1
 )
 
-if not exist "!BROWSER_EXE!" (
-  echo [ERROR] Edge not found: !BROWSER_EXE!
+call :pick_browser
+if not defined BROWSER_EXE (
+  echo [ERROR] Could not find Microsoft Edge or Google Chrome in default install paths.
   pause
   exit /b 1
 )
@@ -30,12 +32,12 @@ if not exist "!CURL_EXE!" (
 echo [INFO] Checking browser CDP on port 9222...
 call :wait_for_cdp 2
 if errorlevel 1 (
-  echo [INFO] Starting Edge with remote debugging port 9222...
+  echo [INFO] Starting browser with remote debugging port 9222...
   start "" "!BROWSER_EXE!" --remote-debugging-port=9222 --user-data-dir="!BROWSER_PROFILE!" "!WORKSPACE_URL!"
   call :wait_for_cdp 20
   if errorlevel 1 (
-    echo [ERROR] Edge CDP did not become ready on port 9222.
-    echo [ERROR] Edge may have opened without binding DevTools to 9222.
+    echo [ERROR] Browser CDP did not become ready on port 9222.
+    echo [ERROR] The browser may have opened without binding DevTools to 9222.
     pause
     exit /b 1
   )
@@ -78,6 +80,25 @@ echo.
 echo [INFO] Process exited with code %EC%.
 pause
 exit /b %EC%
+
+:pick_browser
+if exist "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" (
+  set "BROWSER_EXE=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+  exit /b 0
+)
+if exist "C:\Program Files\Microsoft\Edge\Application\msedge.exe" (
+  set "BROWSER_EXE=C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+  exit /b 0
+)
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
+  set "BROWSER_EXE=C:\Program Files\Google\Chrome\Application\chrome.exe"
+  exit /b 0
+)
+if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
+  set "BROWSER_EXE=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+  exit /b 0
+)
+exit /b 0
 
 :wait_for_cdp
 setlocal EnableDelayedExpansion
