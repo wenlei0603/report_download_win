@@ -564,7 +564,7 @@ def fill_company_with_suggestion(page: Page, selectors: dict, task: RequestTask)
     except Error:
         pass
     target.fill(query)
-    time.sleep(0.35)
+    time.sleep(1.5)
 
     option_selectors = selectors.get(
         "company_option_items",
@@ -961,7 +961,7 @@ def _set_company_component(scope, company: str, ticker: str) -> bool:
                 }
 
                 el.query = q;
-                await new Promise(r => setTimeout(r, 900));
+                await new Promise(r => setTimeout(r, 1500));
 
                 const data = [...(el._resolvedData || []), ...(el._data || []), ...(el.data || [])];
                 const norm = (s) => String(s || '').trim().toLowerCase();
