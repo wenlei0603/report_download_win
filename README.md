@@ -44,6 +44,7 @@ Status > 1        downloaded
 Status > 2        no_report
 Status > 3        failed
 Status > 4        skip
+Status > 5        special_company_case (e.g. privatized/delisted)
 Status > q        exits
 
 Downloaded pages > enter the page count you downloaded manually

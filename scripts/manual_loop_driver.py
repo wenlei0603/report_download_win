@@ -33,9 +33,10 @@ import lseg_rpa as core  # noqa: E402
 STATUS_COMPLETED = "downloaded"
 STATUS_NO_REPORT = "no_report"
 STATUS_FAILED = "task_failed"
+STATUS_SPECIAL_COMPANY_CASE = "special_company_case"
 STATUS_SKIPPED = "skipped"
 
-FINAL_STATUSES = {STATUS_COMPLETED, STATUS_NO_REPORT, STATUS_FAILED}
+FINAL_STATUSES = {STATUS_COMPLETED, STATUS_NO_REPORT, STATUS_FAILED, STATUS_SPECIAL_COMPANY_CASE}
 CHROME_EPOCH = datetime(1601, 1, 1, tzinfo=timezone.utc)
 
 PROGRESS_FIELDS = [
@@ -170,6 +171,13 @@ def normalize_user_status(raw: str) -> str | None:
         "failed": STATUS_FAILED,
         "fail": STATUS_FAILED,
         "error": STATUS_FAILED,
+        "5": STATUS_SPECIAL_COMPANY_CASE,
+        "special": STATUS_SPECIAL_COMPANY_CASE,
+        "special_company_case": STATUS_SPECIAL_COMPANY_CASE,
+        "company_special_case": STATUS_SPECIAL_COMPANY_CASE,
+        "delisted": STATUS_SPECIAL_COMPANY_CASE,
+        "privatized": STATUS_SPECIAL_COMPANY_CASE,
+        "private": STATUS_SPECIAL_COMPANY_CASE,
         "4": STATUS_SKIPPED,
         "skip": STATUS_SKIPPED,
         "s": STATUS_SKIPPED,
@@ -187,6 +195,8 @@ def status_for_mapping(status: str) -> str:
         return "no_downloadable_report"
     if status == STATUS_FAILED:
         return "task_failed"
+    if status == STATUS_SPECIAL_COMPANY_CASE:
+        return "special_company_case"
     return "task_failed"
 
 
@@ -334,12 +344,12 @@ def prompt_status(task: core.RequestTask, default_pages: int = 0) -> tuple[str, 
     print("")
     print(f"[TASK] {task.task_id} | {task.company} | prompt {prompt_window_text(task)}")
     print(f"Search window: {search_window_text(task)}")
-    print("Status: 1=downloaded  2=no_report  3=failed  4=skip  q=quit")
+    print("Status: 1=downloaded  2=no_report  3=failed  4=skip  5=special_company_case  q=quit")
     while True:
         raw = input("Status > ").strip()
         code = normalize_user_status(raw)
         if code is None:
-            print("Invalid status. Use 1/2/3/4/q.")
+            print("Invalid status. Use 1/2/3/4/5/q.")
             continue
         if code == "quit":
             return None
